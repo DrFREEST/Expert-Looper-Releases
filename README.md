@@ -1,2 +1,19 @@
-# Expert-Looper-Releases
-Expert Looper downloads and release notes. Source code is maintained separately.
+# Expert Looper 다운로드
+
+루틴을 만들고 재사용하는 Windows 자동화 편집기입니다. 이 저장소는 실행파일과 공개 배포 안내만 제공합니다.
+
+- [0.10.0 실행파일 다운로드](https://github.com/DrFREEST/Expert-Looper-Releases/releases/download/v0.10.0/ExpLooper.exe)
+- [전체 버전 및 변경 내용](https://github.com/DrFREEST/Expert-Looper-Releases/releases)
+- [자동 업데이트 안내](자동%20업데이트%20안내.md)
+
+Windows 10 2004 이상 / Windows 11, x64용 공개 시험 버전입니다.
+
+기존 사용자는 프로그램을 종료한 뒤 **기존 폴더의 ExpLooper.exe만 교체**하세요. 옆의 Data 폴더는 삭제하지 마세요. 새 폴더에서 실행하면 별도 작업 공간으로 시작합니다.
+
+0.10.0부터 자동 업데이트 확인과 앱 내 업데이트를 지원합니다. 처음 한 번은 수동으로 내려받아야 합니다. GitHub 로그인이나 API 키 입력은 필요하지 않습니다.
+
+## 0.10.0 주요 변경
+
+업데이트 상태 아이콘, 확인/취소 및 재생 정지 안내, 파일 검증과 설치·재시작, 업데이트 후 변경 내용 팝업, 버전별 변경 내역 창을 추가했습니다. 대상 창 포커스 이탈은 일시정지를 유지하고 사용자 입력이 3초간 없을 때 복구하도록 개선했습니다.
+
+실행파일의 오픈소스 라이선스는 프로그램 도움말에서 확인할 수 있습니다.
