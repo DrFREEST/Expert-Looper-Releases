@@ -50,39 +50,54 @@ def wrap(draw, text, font, width):
 
 
 def render_image_notes(entries, after, target, folder, fonts):
+    """White/blue editorial release sheets: six icon-led summaries per page."""
     from PIL import Image, ImageDraw, ImageFont
-    regular=ImageFont.truetype(str(fonts/"Pretendard-Regular.otf"),28)
-    bold=ImageFont.truetype(str(fonts/"Pretendard-Bold.otf"),44)
-    small=ImageFont.truetype(str(fonts/"Pretendard-Regular.otf"),23)
-    pages=[]; image=None; draw=None; y=0
-    def page():
-        nonlocal image,draw,y
-        if image is not None: pages.append(image)
-        image=Image.new("RGB",(1200,1600),"#101923");draw=ImageDraw.Draw(image)
-        draw.text((72,60),"EXPERT LOOPER",font=bold,fill="#edf4fa")
-        draw.text((72,125),f"{after} 이후 · {target}까지 누적 업데이트",font=small,fill="#94b5ca")
-        draw.line((72,178,1128,178),fill="#34495b",width=2);y=212
-    page()
+    def font(size,bold=False):return ImageFont.truetype(str(fonts/("Pretendard-Bold.otf" if bold else "Pretendard-Regular.otf")),size)
+    navy="#07132e";blue="#0878ff";muted="#596b96";rule="#cbdfff"
+    cards=[]
     for v,body in entries:
-        bullets=[clean(line).lstrip("- ") for line in body.splitlines() if line.startswith("- ")]
-        if not bullets: bullets=[clean(body).replace("\n"," ")]
-        # A summary card shows the first three release-note bullets; full notes remain linked.
-        blocks=[(f"v{v}",bold)]+[(b[:230]+("…" if len(b)>230 else ""),regular) for b in bullets[:3]]
-        if len(bullets)>3:blocks.append((f"외 {len(bullets)-3}개 변경 · 전체 변경내역에서 확인",small))
-        group_height=sum(len(wrap(draw,text,font,1030))*42+22 for text,font in blocks)+24
-        if group_height<1250 and y+group_height>1470:page()
-        for text,font in blocks:
-            lines=wrap(draw,text,font,1030);height=len(lines)*42+22
-            if y+height>1470:page()
-            for line in lines:draw.text((72,y),line,font=font,fill="#78d9cd" if font==bold else "#e0e8ef");y+=42
-            y+=22
-        y+=24
-    pages.append(image)
-    if len(pages)>10:raise ValueError("Summary exceeds Discord's 10 image limit; shorten release notes before retry")
+        bullets=[clean(line)[2:] for line in body.splitlines() if line.startswith("- ")]
+        if not bullets:bullets=[clean(body).replace("\n"," ")]
+        title="사용 경험 개선"
+        for pattern,label in [("OCR|인식","화면 인식 개선"),("포커스","작업 흐름 안정화"),("업데이트","편리한 업데이트"),("버그 제보","더 쉬운 버그 제보"),("암호화|난독화","배포 정보 보호"),("단축키","프로젝트 작업 개선")]:
+            if re.search(pattern,body):title=label
+        cards.append((v,title,bullets))
+    if not cards:raise ValueError("No changes to illustrate")
+    count=(len(cards)+5)//6
+    if count>10:raise ValueError("Summary exceeds Discord image limit")
     folder.mkdir(parents=True,exist_ok=True);paths=[]
-    for i,page_image in enumerate(pages,1):
-        ImageDraw.Draw(page_image).text((72,1525),f"변경사항 요약 · 상세 내용은 릴리스 링크에서 확인     {i}/{len(pages)}",font=small,fill="#94b5ca")
-        path=folder/f"업데이트 안내 {target} {i}.png";page_image.save(path);paths.append(path)
+    for page in range(count):
+        image=Image.new("RGB",(1200,1700),"#fcfdff");draw=ImageDraw.Draw(image)
+        def center(text,y,size,color=navy,bold=False):
+            f=font(size,bold);draw.text(((1200-draw.textlength(text,font=f))/2,y),text,font=f,fill=color)
+        f=font(82,True);left="Expert ";right="Looper";x=(1200-draw.textlength(left+right,font=f))/2
+        draw.text((x,52),left,font=f,fill=navy);draw.text((x+draw.textlength(left,font=f),52),right,font=f,fill=blue)
+        center("U P D A T E  "+target,157,26,muted,True)
+        center("더 편리한 작업, 더 안정적인 반복.",238,48,navy,True)
+        center(f"{after} 이후 · {target}까지 주요 변경사항",318,30,muted)
+        draw.line((600,405,600,1450),fill=rule,width=2)
+        for index,(v,title,bullets) in enumerate(cards[page*6:page*6+6]):
+            col=index%2;row=index//2;x=52+col*590;y=418+row*340
+            draw.text((x,y),f"{page*6+index+1:02d}",font=font(29,True),fill=blue)
+            draw.ellipse((x,y+52,x+112,y+164),fill="#eaf4ff")
+            # Simple consistent line icons, generated as part of the template.
+            cx=x+56;cy=y+106
+            draw.rounded_rectangle((cx-29,cy-25,cx+29,cy+25),radius=7,outline=blue,width=5)
+            draw.line((cx-15,cy,cx-3,cy+12,cx+18,cy-14),fill=blue,width=5)
+            draw.text((x+133,y+12),title,font=font(29,True),fill=navy)
+            draw.text((x+133,y+57),"v"+v,font=font(22,True),fill=blue)
+            yy=y+99
+            for bullet in bullets[:3]:
+                lines=wrap(draw,bullet,font(23),390)
+                if len(lines)>2:lines=lines[:2];lines[-1]=lines[-1][:-1]+"…"
+                for line in lines:draw.text((x+133,yy),line,font=font(23),fill=muted);yy+=30
+                yy+=10
+            draw.line((x,y+316,x+545,y+316),fill=rule,width=1)
+        draw.rounded_rectangle((50,1490,1150,1590),radius=24,fill="#f0f7ff",outline=rule,width=2)
+        center("작은 개선이 모여, 더 편안한 자동화를 만듭니다.",1507,27,navy,True)
+        center("주요 항목 요약 · 전체 변경내역은 릴리스 안내에서 확인하세요.",1550,21,muted)
+        center(f"Expert Looper · Windows                         {page+1} / {count}",1623,24,muted)
+        path=folder/f"업데이트 안내 {target} {page+1}.png";image.save(path);paths.append(path)
     return paths
 
 
