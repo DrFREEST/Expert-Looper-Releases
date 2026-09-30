@@ -9,6 +9,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+import datetime
 
 REPO = "DrFREEST/Expert-Looper-Releases"
 INITIAL_IMAGE_VERSION = "0.8.20"
@@ -120,6 +121,61 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self,*args,**kwargs):return None
 
 
+def progress_notice(path=pathlib.Path("개발 진행 안내.json"), today=None):
+    """Publish reviewed public summaries only, never private issue bodies."""
+    data=json.loads(path.read_text(encoding="utf-8-sig"))
+    today=today or datetime.datetime.now(datetime.timezone.utc).date()
+    if not re.fullmatch(r"[a-z0-9-]{8,64}",data.get("id","")):raise ValueError("Invalid bulletin identity")
+    reviewed=datetime.date.fromisoformat(data["reviewed_on"])
+    expires=datetime.date.fromisoformat(data["valid_until"])
+    if not reviewed<=today<=expires or (expires-reviewed).days>14:raise ValueError("Progress summary needs review")
+    items=data.get("items",[])
+    if not 1<=len(items)<=3:raise ValueError("Progress summary needs 1..3 items")
+    for item in items:
+        if item.get("status") not in ("진행 중","업데이트 예정"):raise ValueError("Invalid progress state")
+        if not isinstance(item.get("title"),str) or not 1<=len(item["title"])<=28:raise ValueError("Invalid progress title")
+        if not isinstance(item.get("summary"),str) or not 1<=len(item["summary"])<=100:raise ValueError("Invalid progress summary")
+        if any(c in item["title"]+item["summary"] for c in "\r\n"):raise ValueError("Use single-line summaries")
+    return data
+
+
+def render_progress(data, folder, fonts):
+    from PIL import Image, ImageDraw, ImageFont
+    folder.mkdir(parents=True,exist_ok=True)
+    def font(size,bold=False):return ImageFont.truetype(str(fonts/("Pretendard-Bold.otf" if bold else "Pretendard-Regular.otf")),size)
+    image=Image.new("RGB",(1200,1200),"#fcfdff");draw=ImageDraw.Draw(image)
+    draw.text((65,55),"Expert Looper",font=font(56,True),fill="#07132e")
+    draw.text((65,135),"개발 진행 · 앞으로의 업데이트",font=font(43,True),fill="#0878ff")
+    draw.text((65,205),"아래 내용은 아직 배포되지 않았습니다.",font=font(29,True),fill="#596b96")
+    for i,item in enumerate(data["items"]):
+        y=280+i*235
+        draw.rounded_rectangle((55,y,1145,y+210),radius=20,fill="#f0f7ff",outline="#cbdfff",width=2)
+        draw.text((85,y+20),item["status"]+" · 일정 미정",font=font(24,True),fill="#0878ff")
+        if draw.textlength(item["title"],font=font(34,True))>1025:raise ValueError("Progress title exceeds card width")
+        draw.text((85,y+62),item["title"],font=font(34,True),fill="#07132e")
+        lines=wrap(draw,item["summary"],font(27),1025)
+        if len(lines)>2:raise ValueError("Progress summary exceeds card height")
+        for j,line in enumerate(lines):draw.text((85,y+116+j*34),line,font=font(27),fill="#596b96")
+    draw.text((65,1025),"검증 결과에 따라 범위와 일정이 달라질 수 있습니다.",font=font(28),fill="#596b96")
+    draw.text((65,1080),"진행 현황 확인: "+data["reviewed_on"],font=font(24),fill="#596b96")
+    path=folder/("개발 진행 안내 "+data["id"]+".png");image.save(path);return path
+
+
+def announce_progress():
+    data=progress_notice()
+    state_path=".release-notifications/progress-"+data["id"]+".json"
+    existing=get_file(state_path)
+    if existing:
+        state=json.loads(base64.b64decode(existing["content"]))
+        if state["status"]!="sent":raise ValueError("Pending delivery requires operator verification")
+        return
+    image=render_progress(data,pathlib.Path("output"),pathlib.Path("fonts"))
+    content="**Expert Looper · 개발 진행 안내**\n진행 중인 작업과 업데이트 예정 내용을 이미지로 정리했습니다.\n아직 배포되지 않았으며, 일정은 검증 후 확정합니다."
+    claim=save_state(state_path,{"status":"pending","bulletin":data["id"]})
+    message_id=send(os.environ["DISCORD_CHANGELOG_WEBHOOK"],content,[image])
+    save_state(state_path,{"status":"sent","bulletin":data["id"],"messageId":message_id},claim)
+
+
 def github(path, method="GET", data=None):
     headers={"Authorization":"Bearer "+os.environ["GITHUB_TOKEN"].strip(),"User-Agent":"ExpertLooper-Releases","Accept":"application/vnd.github+json"}
     body=None
@@ -158,6 +214,7 @@ def send(webhook,content,images):
 
 
 def main():
+    if os.environ.get("NOTICE_KIND","release")=="progress":return announce_progress()
     tag=os.environ["RELEASE_TAG"];version(tag)
     release=github("/releases/tags/"+tag)
     if release["draft"]:raise ValueError("Draft releases are not announced")
@@ -182,6 +239,8 @@ def main():
             images=render_image_notes(cumulative(notes,anchor,target),anchor,target,pathlib.Path("output"),pathlib.Path("fonts"))
         content=f"새로운 기능과 개선사항을 만나보세요! ✨\n**Expert Looper {target}**\n{anchor} 이후 변경사항을 이미지로 정리했어요. 중간 버그 수정도 포함했습니다.\n함께 더 편리한 루퍼를 만들어주셔서 감사합니다!\n상세 변경내역: https://github.com/{REPO}/blob/main/CHANGELOG.md"
     download=f"새 버전을 준비했어요! 📦\n**Expert Looper {target} 다운로드**\nhttps://github.com/{REPO}/releases/download/{tag}/ExpLooper.exe\n\n이미 사용 중이라면 **도움말 → 업데이트 확인**으로도 업데이트할 수 있어요.\n직접 교체할 때는 프로그램을 종료하고 기존 폴더의 실행파일만 교체해 주세요. Data 폴더는 그대로 유지해 주세요!"
+    release_images_present=bool(images)
+    content+="\n\n첨부된 개발 진행 안내는 아직 배포되지 않은 작업이며, 일정은 미정입니다."
     errors=[]
     for channel,secret,text,files in (("changelog","DISCORD_CHANGELOG_WEBHOOK",content,images),("download","DISCORD_DOWNLOAD_WEBHOOK",download,[])):
         try:
@@ -192,7 +251,11 @@ def main():
                 if state["status"]!="sent":raise ValueError("Pending delivery requires operator verification")
                 message_id=state["messageId"]
             else:
-                if channel=="changelog" and kind!="fix" and not files:raise ValueError("Image baseline is not older than release")
+                if channel=="changelog" and kind!="fix" and not release_images_present:raise ValueError("Image baseline is not older than release")
+                if channel=="changelog":
+                    progress=render_progress(progress_notice(),pathlib.Path("output"),pathlib.Path("fonts"))
+                    files=[*files,progress]
+                    if len(files)>10:raise ValueError("Combined summary exceeds Discord attachment limit")
                 claim=save_state(state_path,{"status":"pending","version":target,"kind":kind})
                 # Never blindly retry an uncertain POST; inspect the channel first.
                 message_id=send(os.environ[secret],text,files)
