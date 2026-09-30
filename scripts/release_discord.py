@@ -54,6 +54,8 @@ def render_image_notes(entries, after, target, folder, fonts):
     from PIL import Image, ImageDraw, ImageFont
     def font(size,bold=False):return ImageFont.truetype(str(fonts/("Pretendard-Bold.otf" if bold else "Pretendard-Regular.otf")),size)
     navy="#07132e";blue="#0878ff";muted="#596b96";rule="#cbdfff"
+    catalog_path=pathlib.Path("변경내용 이미지 요약.json")
+    catalog=json.loads(catalog_path.read_text(encoding="utf-8-sig")) if catalog_path.exists() else {}
     cards=[]
     for v,body in entries:
         bullets=[clean(line)[2:] for line in body.splitlines() if line.startswith("- ")]
@@ -61,7 +63,8 @@ def render_image_notes(entries, after, target, folder, fonts):
         title="사용 경험 개선"
         for pattern,label in [("OCR|인식","화면 인식 개선"),("포커스","작업 흐름 안정화"),("업데이트","편리한 업데이트"),("버그 제보","더 쉬운 버그 제보"),("암호화|난독화","배포 정보 보호"),("단축키","프로젝트 작업 개선")]:
             if re.search(pattern,body):title=label
-        cards.append((v,title,bullets))
+        summary=catalog.get(v,{})
+        cards.append((v,summary.get("title",title),summary.get("lines",bullets)))
     if not cards:raise ValueError("No changes to illustrate")
     count=(len(cards)+5)//6
     if count>10:raise ValueError("Summary exceeds Discord image limit")
@@ -82,8 +85,20 @@ def render_image_notes(entries, after, target, folder, fonts):
             draw.ellipse((x,y+52,x+112,y+164),fill="#eaf4ff")
             # Simple consistent line icons, generated as part of the template.
             cx=x+56;cy=y+106
-            draw.rounded_rectangle((cx-29,cy-25,cx+29,cy+25),radius=7,outline=blue,width=5)
-            draw.line((cx-15,cy,cx-3,cy+12,cx+18,cy-14),fill=blue,width=5)
+            if "인식" in title or "글자" in title:
+                draw.text((cx-18,cy-30),"T",font=font(48,True),fill=blue)
+                draw.line((cx-34,cy-22,cx-34,cy-34,cx-20,cy-34),fill=blue,width=5)
+                draw.line((cx+34,cy+22,cx+34,cy+34,cx+20,cy+34),fill=blue,width=5)
+            elif "업데이트" in title:
+                draw.line((cx,cy-30,cx,cy+14),fill=blue,width=6)
+                draw.line((cx-16,cy,cx,cy+17,cx+16,cy),fill=blue,width=6)
+                draw.line((cx-28,cy+12,cx-28,cy+29,cx+28,cy+29,cx+28,cy+12),fill=blue,width=5)
+            elif "제보" in title:
+                draw.rounded_rectangle((cx-30,cy-26,cx+30,cy+18),radius=8,outline=blue,width=5)
+                draw.line((cx-12,cy+18,cx-23,cy+32,cx+5,cy+18),fill=blue,width=4)
+            else:
+                draw.rounded_rectangle((cx-29,cy-25,cx+29,cy+25),radius=7,outline=blue,width=5)
+                draw.line((cx-15,cy,cx-3,cy+12,cx+18,cy-14),fill=blue,width=5)
             draw.text((x+133,y+12),title,font=font(29,True),fill=navy)
             draw.text((x+133,y+57),"v"+v,font=font(22,True),fill=blue)
             yy=y+99
