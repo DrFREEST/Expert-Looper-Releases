@@ -4,9 +4,14 @@ on:
     types: [published]
   workflow_dispatch:
     inputs:
+      kind:
+        description: Release announcement or development progress image
+        type: choice
+        options: [release, progress]
+        default: release
       tag:
         description: Published version tag
-        required: true
+        required: false
         type: string
 permissions:
   contents: write
@@ -29,4 +34,5 @@ jobs:
           DISCORD_CHANGELOG_WEBHOOK: ${{ secrets.DISCORD_CHANGELOG_WEBHOOK }}
           DISCORD_DOWNLOAD_WEBHOOK: ${{ secrets.DISCORD_DOWNLOAD_WEBHOOK }}
           RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          NOTICE_KIND: ${{ github.event_name == 'release' && 'release' || inputs.kind }}
         run: python3 scripts/release_discord.py
