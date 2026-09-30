@@ -2,7 +2,7 @@
 
 루틴을 만들고 재사용하는 Windows 자동화 편집기입니다. 이 저장소는 실행파일과 공개 배포 안내를 제공합니다.
 
-- [최신 실행파일 다운로드](https://github.com/DrFREEST/Expert-Looper-Releases/releases/latest/download/ExpLooper.exe)
+- [0.11.1 실행파일 다운로드](https://github.com/DrFREEST/Expert-Looper-Releases/releases/download/v0.11.1/ExpLooper.exe)
 - [버전별 변경 내용과 다운로드](https://github.com/DrFREEST/Expert-Looper-Releases/releases)
 - [전체 변경 내역](CHANGELOG.md)
 - [자동 업데이트 안내](자동%20업데이트%20안내.md)
