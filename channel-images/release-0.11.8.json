@@ -1,0 +1,15 @@
+{
+  "style_id": "expert-looper-ai-reference-v1",
+  "reference_sha256": "5e0bc380f4b938736bf5279c3a2936f1242fbf0d3d8b81106625aa0997addde8",
+  "prompt_source_sha": "9a1b4c2434d9f19e4ee7ecfbd5088dc1cf824c8b",
+  "kind": "release",
+  "identity": "0.11.8",
+  "content_sha256": "503281d4e992a54b2cf493608c3332f8d7a20407a603b7cc22daf92ced6e17e6",
+  "reviewed": true,
+  "images": [
+    {
+      "path": "release-0.11.8-ai.png",
+      "sha256": "38989b70aa4d61cabe9f021c62a4696ad8fc5c94a7a69a6d736523d8930873b8"
+    }
+  ]
+}
