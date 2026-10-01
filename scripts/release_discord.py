@@ -1,5 +1,6 @@
 """Publish release announcements; secrets stay in Actions, never in the app."""
 import base64
+import hashlib
 import io
 import json
 import os
@@ -10,6 +11,8 @@ import urllib.parse
 import urllib.request
 import uuid
 import datetime
+import time
+from PIL import Image
 
 REPO = "DrFREEST/Expert-Looper-Releases"
 INITIAL_IMAGE_VERSION = "0.8.20"
@@ -50,71 +53,72 @@ def wrap(draw, text, font, width):
     return lines or [""]
 
 
+def public_notice_text(text):
+    """Reject domain-specific copy and clipped sentences before any delivery."""
+    if re.search(r"전리품|장면\s*넘기기|부활|어비스|마비노기|게임", text, re.I):
+        raise ValueError("Use general-purpose Windows automation wording")
+    if "…" in text or "..." in text:
+        raise ValueError("Use complete sentences; split items or pages instead of ellipsis")
+    return text
+
+
+def content_hash(data):
+    return hashlib.sha256(json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def approved_images(kind, identity, content, root=pathlib.Path("channel-images")):
+    """Use reviewed AI output only. Never fall back to a code-rendered template."""
+    if kind not in {"release", "progress"} or not re.fullmatch(r"[a-zA-Z0-9_.-]+", identity):
+        raise ValueError("Invalid image identity")
+    public_notice_text(json.dumps(content, ensure_ascii=False))
+    root = root.resolve()
+    manifest_path = (root / (kind + "-" + identity + ".json")).resolve()
+    if not manifest_path.is_relative_to(root) or manifest_path.stat().st_size > 65536:
+        raise ValueError("Image review manifest must stay inside channel-images and be bounded")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
+    if not isinstance(manifest, dict): raise ValueError("Invalid image review manifest")
+    if (manifest.get("style_id") != "expert-looper-ai-reference-v1"
+            or manifest.get("reference_sha256") != "5e0bc380f4b938736bf5279c3a2936f1242fbf0d3d8b81106625aa0997addde8"
+            or manifest.get("kind") != kind or manifest.get("identity") != identity
+            or manifest.get("content_sha256") != content_hash(content)
+            or manifest.get("reviewed") is not True
+            or not re.fullmatch(r"[a-f0-9]{40}", manifest.get("prompt_source_sha", ""))):
+        raise ValueError("AI image review is missing or stale")
+    assets = manifest.get("images", [])
+    if not isinstance(assets, list) or not 1 <= len(assets) <= 9:
+        raise ValueError("Review 1-9 image pages before delivery")
+    result = []
+    for entry in assets:
+        if (not isinstance(entry, dict) or not isinstance(entry.get("path"), str)
+                or not re.fullmatch(r"[A-Za-z0-9_./ -]+", entry["path"])
+                or pathlib.Path(entry["path"]).is_absolute()):
+            raise ValueError("Invalid image asset path")
+        path = (root / entry["path"]).resolve()
+        if not path.is_relative_to(root) or path.suffix.lower() != ".png":
+            raise ValueError("Image path must stay inside channel-images")
+        if path.stat().st_size > 8 * 1024 * 1024: raise ValueError("Image exceeds attachment size limit")
+        data = path.read_bytes()
+        if (not data.startswith(b"\x89PNG\r\n\x1a\n") or len(data) > 8 * 1024 * 1024
+                or hashlib.sha256(data).hexdigest() != entry.get("sha256")):
+            raise ValueError("AI image asset changed since review")
+        try:
+            with Image.open(io.BytesIO(data)) as png:
+                if png.format != 'PNG' or png.width * png.height > 16_000_000 or png.width > 8192 or png.height > 8192:
+                    raise ValueError('Image dimensions exceed review limits')
+                png.verify()
+            # verify() validates chunks; load() also forces complete pixel decoding.
+            with Image.open(io.BytesIO(data)) as png:
+                png.load()
+        except Exception as error:
+            raise ValueError('AI image is not a complete valid PNG') from error
+        if path in result: raise ValueError("Duplicate image page")
+        result.append(path)
+    return result
+
+
 def render_image_notes(entries, after, target, folder, fonts):
-    """White/blue editorial release sheets: six icon-led summaries per page."""
-    from PIL import Image, ImageDraw, ImageFont
-    def font(size,bold=False):return ImageFont.truetype(str(fonts/("Pretendard-Bold.otf" if bold else "Pretendard-Regular.otf")),size)
-    navy="#07132e";blue="#0878ff";muted="#596b96";rule="#cbdfff"
-    catalog_path=pathlib.Path("변경내용 이미지 요약.json")
-    catalog=json.loads(catalog_path.read_text(encoding="utf-8-sig")) if catalog_path.exists() else {}
-    cards=[]
-    for v,body in entries:
-        bullets=[clean(line)[2:] for line in body.splitlines() if line.startswith("- ")]
-        if not bullets:bullets=[clean(body).replace("\n"," ")]
-        title="사용 경험 개선"
-        for pattern,label in [("OCR|인식","화면 인식 개선"),("포커스","작업 흐름 안정화"),("업데이트","편리한 업데이트"),("버그 제보","더 쉬운 버그 제보"),("암호화|난독화","배포 정보 보호"),("단축키","프로젝트 작업 개선")]:
-            if re.search(pattern,body):title=label
-        summary=catalog.get(v,{})
-        cards.append((v,summary.get("title",title),summary.get("lines",bullets)))
-    if not cards:raise ValueError("No changes to illustrate")
-    count=(len(cards)+5)//6
-    if count>10:raise ValueError("Summary exceeds Discord image limit")
-    folder.mkdir(parents=True,exist_ok=True);paths=[]
-    for page in range(count):
-        image=Image.new("RGB",(1200,1700),"#fcfdff");draw=ImageDraw.Draw(image)
-        def center(text,y,size,color=navy,bold=False):
-            f=font(size,bold);draw.text(((1200-draw.textlength(text,font=f))/2,y),text,font=f,fill=color)
-        f=font(82,True);left="Expert ";right="Looper";x=(1200-draw.textlength(left+right,font=f))/2
-        draw.text((x,52),left,font=f,fill=navy);draw.text((x+draw.textlength(left,font=f),52),right,font=f,fill=blue)
-        center("U P D A T E  "+target,157,26,muted,True)
-        center("더 편리한 작업, 더 안정적인 반복.",238,48,navy,True)
-        center(f"{after} 이후 · {target}까지 주요 변경사항",318,30,muted)
-        draw.line((600,405,600,1450),fill=rule,width=2)
-        for index,(v,title,bullets) in enumerate(cards[page*6:page*6+6]):
-            col=index%2;row=index//2;x=52+col*590;y=418+row*340
-            draw.text((x,y),f"{page*6+index+1:02d}",font=font(29,True),fill=blue)
-            draw.ellipse((x,y+52,x+112,y+164),fill="#eaf4ff")
-            # Simple consistent line icons, generated as part of the template.
-            cx=x+56;cy=y+106
-            if "인식" in title or "글자" in title:
-                draw.text((cx-18,cy-30),"T",font=font(48,True),fill=blue)
-                draw.line((cx-34,cy-22,cx-34,cy-34,cx-20,cy-34),fill=blue,width=5)
-                draw.line((cx+34,cy+22,cx+34,cy+34,cx+20,cy+34),fill=blue,width=5)
-            elif "업데이트" in title:
-                draw.line((cx,cy-30,cx,cy+14),fill=blue,width=6)
-                draw.line((cx-16,cy,cx,cy+17,cx+16,cy),fill=blue,width=6)
-                draw.line((cx-28,cy+12,cx-28,cy+29,cx+28,cy+29,cx+28,cy+12),fill=blue,width=5)
-            elif "제보" in title:
-                draw.rounded_rectangle((cx-30,cy-26,cx+30,cy+18),radius=8,outline=blue,width=5)
-                draw.line((cx-12,cy+18,cx-23,cy+32,cx+5,cy+18),fill=blue,width=4)
-            else:
-                draw.rounded_rectangle((cx-29,cy-25,cx+29,cy+25),radius=7,outline=blue,width=5)
-                draw.line((cx-15,cy,cx-3,cy+12,cx+18,cy-14),fill=blue,width=5)
-            draw.text((x+133,y+12),title,font=font(29,True),fill=navy)
-            draw.text((x+133,y+57),"v"+v,font=font(22,True),fill=blue)
-            yy=y+99
-            for bullet in bullets[:3]:
-                lines=wrap(draw,bullet,font(23),390)
-                if len(lines)>2:lines=lines[:2];lines[-1]=lines[-1][:-1]+"…"
-                for line in lines:draw.text((x+133,yy),line,font=font(23),fill=muted);yy+=30
-                yy+=10
-            draw.line((x,y+316,x+545,y+316),fill=rule,width=1)
-        draw.rounded_rectangle((50,1490,1150,1590),radius=24,fill="#f0f7ff",outline=rule,width=2)
-        center("작은 개선이 모여, 더 편안한 자동화를 만듭니다.",1507,27,navy,True)
-        center("주요 항목 요약 · 전체 변경내역은 릴리스 안내에서 확인하세요.",1550,21,muted)
-        center(f"Expert Looper · Windows                         {page+1} / {count}",1623,24,muted)
-        path=folder/f"업데이트 안내 {target} {page+1}.png";image.save(path);paths.append(path)
-    return paths
+    # Compatibility entry point for the existing notification workflow.
+    return approved_images("release", target, {"after": after, "target": target, "entries": entries})
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -140,25 +144,10 @@ def progress_notice(path=pathlib.Path("개발 진행 안내.json"), today=None):
 
 
 def render_progress(data, folder, fonts):
-    from PIL import Image, ImageDraw, ImageFont
-    folder.mkdir(parents=True,exist_ok=True)
-    def font(size,bold=False):return ImageFont.truetype(str(fonts/("Pretendard-Bold.otf" if bold else "Pretendard-Regular.otf")),size)
-    image=Image.new("RGB",(1200,1200),"#fcfdff");draw=ImageDraw.Draw(image)
-    draw.text((65,55),"Expert Looper",font=font(56,True),fill="#07132e")
-    draw.text((65,135),"개발 진행 · 앞으로의 업데이트",font=font(43,True),fill="#0878ff")
-    draw.text((65,205),"아래 내용은 아직 배포되지 않았습니다.",font=font(29,True),fill="#596b96")
-    for i,item in enumerate(data["items"]):
-        y=280+i*235
-        draw.rounded_rectangle((55,y,1145,y+210),radius=20,fill="#f0f7ff",outline="#cbdfff",width=2)
-        draw.text((85,y+20),item["status"]+" · 일정 미정",font=font(24,True),fill="#0878ff")
-        if draw.textlength(item["title"],font=font(34,True))>1025:raise ValueError("Progress title exceeds card width")
-        draw.text((85,y+62),item["title"],font=font(34,True),fill="#07132e")
-        lines=wrap(draw,item["summary"],font(27),1025)
-        if len(lines)>2:raise ValueError("Progress summary exceeds card height")
-        for j,line in enumerate(lines):draw.text((85,y+116+j*34),line,font=font(27),fill="#596b96")
-    draw.text((65,1025),"검증 결과에 따라 범위와 일정이 달라질 수 있습니다.",font=font(28),fill="#596b96")
-    draw.text((65,1080),"진행 현황 확인: "+data["reviewed_on"],font=font(24),fill="#596b96")
-    path=folder/("개발 진행 안내 "+data["id"]+".png");image.save(path);return path
+    images = approved_images("progress", data["id"], data)
+    if len(images) != 1:
+        raise ValueError("Progress bulletin requires one reviewed page")
+    return images[0]
 
 
 def announce_progress():
@@ -191,6 +180,56 @@ def get_file(path):
         raise
 
 
+class FeedNotReady(ValueError):
+    pass
+
+
+def release_feed_ready(tag):
+    """Read-only readiness check. Publishing precedes the feed PUT, so a short lag is normal."""
+    expected = tag.lstrip('v')
+    release = github('/releases/tags/' + tag)
+    if release.get('draft') or release.get('tag_name') != tag or not release.get('published_at'):
+        raise FeedNotReady('Release is not published yet')
+    assets = release.get('assets', [])
+    selected = {}
+    for name in ('ExpLooper.exe', 'update.json'):
+        matches = [a for a in assets if a.get('name') == name]
+        if len(matches) != 1 or matches[0].get('state') != 'uploaded' or matches[0].get('size', 0) <= 0:
+            raise FeedNotReady('Published release assets are not ready')
+        if matches[0].get('browser_download_url') != f'https://github.com/{REPO}/releases/download/{tag}/{name}':
+            raise ValueError('Unexpected published asset URL')
+        selected[name] = matches[0]
+    current = get_file('update.json')
+    if not current: raise FeedNotReady('Update feed is not available yet')
+    envelope = json.loads(base64.b64decode(current['content']))
+    # The publishing script validates the signature. Here check the advertised immutable asset identity.
+    if not envelope.get('Signature'): raise ValueError('Unsigned update feed')
+    payload = json.loads(base64.b64decode(envelope['Payload'], validate=True))
+    if payload.get('Version') != expected:
+        if version(payload.get('Version', '')) < version(expected):
+            raise FeedNotReady('Update feed still advertises the preceding release')
+        raise ValueError('Update feed already advertises a newer release')
+    if (payload.get('Url') != selected['ExpLooper.exe']['browser_download_url']
+            or payload.get('Size') != selected['ExpLooper.exe']['size']
+            or not re.fullmatch(r'[A-Fa-f0-9]{64}', payload.get('Sha256', ''))):
+        raise ValueError('Update feed does not identify the published executable')
+    digest = selected['ExpLooper.exe'].get('digest')
+    if digest and digest.lower() != 'sha256:' + payload['Sha256'].lower():
+        raise ValueError('Update feed and published executable hash differ')
+    return release
+
+
+def wait_release_feed(tag, attempts=4, delay=10):
+    for attempt in range(attempts):
+        try: return release_feed_ready(tag)
+        except urllib.error.HTTPError as error:
+            if error.code not in (404, 429, 500, 502, 503, 504): raise
+        except (FeedNotReady, urllib.error.URLError, TimeoutError):
+            pass
+        if attempt + 1 < attempts: time.sleep(delay)
+    raise FeedNotReady('Release feed readiness timed out; no announcement sent')
+
+
 def save_state(path,data,old=None):
     body={"message":"Record release notification state","branch":"main","content":base64.b64encode(json.dumps(data).encode()).decode()}
     if old:body["sha"]=old["sha"]
@@ -216,8 +255,7 @@ def send(webhook,content,images):
 def main():
     if os.environ.get("NOTICE_KIND","release")=="progress":return announce_progress()
     tag=os.environ["RELEASE_TAG"];version(tag)
-    release=github("/releases/tags/"+tag)
-    if release["draft"]:raise ValueError("Draft releases are not announced")
+    release=wait_release_feed(tag)
     all_releases=[]
     for page in range(1,101):
         batch=github(f"/releases?per_page=100&page={page}");all_releases.extend(batch)
@@ -232,14 +270,12 @@ def main():
         if re.fullmatch(r"v?0\.\d+\.\d+",r["tag_name"]) and not r["draft"]:notes[r["tag_name"].lstrip("v")]=clean(r.get("body") or "")
     images=[];url=release["html_url"]
     if kind=="fix":
-        text=clean(release.get("body") or "변경 내용은 릴리스에서 확인해 주세요.")
-        content=f"새 업데이트가 도착했어요! 🛠️\n**Expert Looper {target} · 버그 수정**\n{text[:1500]}\n\n더 편하게 사용할 수 있도록 계속 다듬고 있어요. 알려주신 의견에 감사드립니다!"
+        text=public_notice_text(clean(release.get("body") or "변경 내용은 릴리스에서 확인해 주세요."))
+        if len(text)>1500:raise ValueError("Rewrite complete concise release sentences before delivery")
+        content=f"새 업데이트가 도착했어요! 🛠️\n**Expert Looper {target} · 버그 수정**\n{text}\n\n더 편하게 사용할 수 있도록 계속 다듬고 있어요. 알려주신 의견에 감사드립니다!"
     else:
-        if version(anchor)<version(target):
-            images=render_image_notes(cumulative(notes,anchor,target),anchor,target,pathlib.Path("output"),pathlib.Path("fonts"))
         content=f"새로운 기능과 개선사항을 만나보세요! ✨\n**Expert Looper {target}**\n{anchor} 이후 변경사항을 이미지로 정리했어요. 중간 버그 수정도 포함했습니다.\n함께 더 편리한 루퍼를 만들어주셔서 감사합니다!\n상세 변경내역: https://github.com/{REPO}/blob/main/CHANGELOG.md"
     download=f"새 버전을 준비했어요! 📦\n**Expert Looper {target} 다운로드**\nhttps://github.com/{REPO}/releases/download/{tag}/ExpLooper.exe\n\n이미 사용 중이라면 **도움말 → 업데이트 확인**으로도 업데이트할 수 있어요.\n직접 교체할 때는 프로그램을 종료하고 기존 폴더의 실행파일만 교체해 주세요. Data 폴더는 그대로 유지해 주세요!"
-    release_images_present=bool(images)
     content+="\n\n첨부된 개발 진행 안내는 아직 배포되지 않은 작업이며, 일정은 미정입니다."
     errors=[]
     for channel,secret,text,files in (("changelog","DISCORD_CHANGELOG_WEBHOOK",content,images),("download","DISCORD_DOWNLOAD_WEBHOOK",download,[])):
@@ -251,8 +287,10 @@ def main():
                 if state["status"]!="sent":raise ValueError("Pending delivery requires operator verification")
                 message_id=state["messageId"]
             else:
-                if channel=="changelog" and kind!="fix" and not release_images_present:raise ValueError("Image baseline is not older than release")
                 if channel=="changelog":
+                    if kind != "fix":
+                        if version(anchor) >= version(target): raise ValueError("Image baseline is not older than release")
+                        files=render_image_notes(cumulative(notes,anchor,target),anchor,target,pathlib.Path("output"),pathlib.Path("fonts"))
                     progress=render_progress(progress_notice(),pathlib.Path("output"),pathlib.Path("fonts"))
                     files=[*files,progress]
                     if len(files)>10:raise ValueError("Combined summary exceeds Discord attachment limit")

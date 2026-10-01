@@ -6,14 +6,14 @@
 
 ### 반복하는 일은 루틴으로, 내 시간은 더 자유롭게.
 
-동작을 블록으로 연결해 만드는 **Windows 자동화 편집기**  
+동작을 블록으로 연결해 만드는 **범용 Windows 자동화 편집기**  
 작은 클릭 반복부터 조건 판단과 재사용 가능한 루틴까지.
 
 **Windows 10 / 11 · 한국어 · 공개 시험 버전**
 
-### [↓ 0.11.2 실행파일 다운로드](https://github.com/DrFREEST/Expert-Looper-Releases/releases/download/v0.11.2/ExpLooper.exe)
+### [↓ 0.11.5 실행파일 다운로드](https://github.com/DrFREEST/Expert-Looper-Releases/releases/download/v0.11.5/ExpLooper.exe)
 
-단일 실행파일 · 약 254MB · Windows x64
+단일 실행파일 · 약 267MB · Windows x64
 
 [처음 시작하기](#처음-시작하기) · [업데이트하기](#업데이트하기) · [변경 내역](CHANGELOG.md) · [전체 릴리스](https://github.com/DrFREEST/Expert-Looper-Releases/releases)
 
@@ -94,6 +94,10 @@ Expert Looper는 자주 반복하는 화면 작업을 **보고, 판단하고, �
 ### ④ 저장하고 짧게 확인하기
 
 **Ctrl+S**로 프로젝트를 저장하세요. 시작 전 흐름을 확인하고, 준비가 끝나면 **재생**을 누릅니다. 기본 재생 키는 **F6**, 정지는 **F8**이며 사용자 설정에 따라 다를 수 있습니다. 실제 지정된 키는 **설정 → 단축키 설정**에서 확인하세요.
+
+### 설정을 한곳에서 확인하기 · 0.11.5 이상
+
+메뉴 또는 작업실 왼쪽 아래의 **설정** 버튼을 누르면 카테고리별 설정 화면이 열립니다. 실행·보관, 단축키, 화면·테마, 창·트레이, 기존 AI 연결로 이동하고 설정이 저장되는 위치를 확인할 수 있습니다. 기존 설정값과 프로젝트 저장 형식은 유지됩니다.
 
 ### 프로젝트 작업 단축키 · 0.11.2 이상
 
@@ -181,7 +185,7 @@ Expert Looper는 자주 반복하는 화면 작업을 **보고, 판단하고, �
 
 **조금씩 만들고, 확인하고, 나만의 루틴으로 확장하세요.**
 
-[실행파일 받기](https://github.com/DrFREEST/Expert-Looper-Releases/releases/download/v0.11.2/ExpLooper.exe) · [변경 내역 읽기](CHANGELOG.md) · [릴리스 둘러보기](https://github.com/DrFREEST/Expert-Looper-Releases/releases)
+[실행파일 받기](https://github.com/DrFREEST/Expert-Looper-Releases/releases/download/v0.11.5/ExpLooper.exe) · [변경 내역 읽기](CHANGELOG.md) · [릴리스 둘러보기](https://github.com/DrFREEST/Expert-Looper-Releases/releases)
 
 이 저장소는 공개 배포와 안내를 위한 공간입니다.  
 프로그램에 포함된 오픈소스 라이선스는 도움말에서 확인할 수 있습니다.

@@ -1,0 +1,15 @@
+{
+  "style_id": "expert-looper-ai-reference-v1",
+  "reference_sha256": "5e0bc380f4b938736bf5279c3a2936f1242fbf0d3d8b81106625aa0997addde8",
+  "prompt_source_sha": "80127d1aa5cae101b908d1a02b88853f15a910a3",
+  "kind": "progress",
+  "identity": "20261001-progress-02",
+  "content_sha256": "6bd9112a85bf6bfa33ddcecbe8d9b5ea6facdc4ad871c7192aa6410431513ab5",
+  "reviewed": true,
+  "images": [
+    {
+      "path": "progress-20261001-progress-02.png",
+      "sha256": "dcaeb0992ac3633f1b4efd9467d6cd9f54aebdcb424523caea80bdc6f4602147"
+    }
+  ]
+}
