@@ -11,7 +11,7 @@
 
 **Windows 10 / 11 · 한국어 · 공개 시험 버전**
 
-### [↓ 0.11.7 실행파일 다운로드](https://github.com/DrFREEST/Expert-Looper-Releases/releases/download/v0.11.7/ExpLooper.exe)
+### [↓ 공개된 실행파일 다운로드](https://github.com/DrFREEST/Expert-Looper-Releases/releases)
 
 단일 실행파일 · 약 267MB · Windows x64
 
@@ -46,7 +46,7 @@ Expert Looper는 자주 반복하는 화면 작업을 **보고, 판단하고, �
 
 ### 1. 다운로드하고 폴더 준비하기
 
-위의 **실행파일 다운로드**를 눌러 `ExpLooper.exe`를 저장하세요. 문서 폴더 안에 `ExpertLooper` 폴더를 만들어 보관하면 찾기 쉽습니다. 다운로드에 GitHub 로그인이나 API 키는 필요하지 않습니다.
+위의 **공개된 실행파일 다운로드**를 눌러 릴리스 목록에서 현재 공개된 버전을 고른 뒤, **Assets**의 `ExpLooper.exe`를 저장하세요. 문서 폴더 안에 `ExpertLooper` 폴더를 만들어 보관하면 찾기 쉽습니다. 다운로드에 GitHub 로그인이나 API 키는 필요하지 않습니다.
 
 | 항목 | 안내 |
 |---|---|
@@ -103,6 +103,8 @@ Expert Looper는 자주 반복하는 화면 작업을 **보고, 판단하고, �
 
 0.11.7부터 블록의 색상·주석 화면에서 기존 8가지 색의 제목 배경 견본을 선택 전에 확인할 수 있습니다. 색을 선택하면 적용 전 미리보기에 반영되며, 프로젝트와 공유 파일의 저장 형식은 그대로입니다.
 
+0.11.8 변경 사항에는 메뉴·설정 도움말 보완, 공통 데이터 편집 화면의 시작값 입력과 배치 정돈, 빈 루틴의 첫 동작 안내, Slate Mint 어두운 테마가 포함됩니다. 기존 명령·단축키·프로젝트 저장 및 공유 형식은 유지됩니다. 실제 공개 여부와 설치 파일은 위의 릴리스 목록에서 확인하세요.
+
 ### 프로젝트 작업 단축키 · 0.11.2 이상
 
 | 작업 | 기본 단축키 |
@@ -151,7 +153,7 @@ Expert Looper는 자주 반복하는 화면 작업을 **보고, 판단하고, �
 <details>
 <summary><strong>GitHub의 Assets에서는 어떤 파일을 받나요?</strong></summary>
 
-**ExpLooper.exe**를 받으세요. `update.json`은 자동 업데이트용 정보 파일입니다. `Source code` 압축파일은 실행파일이 아닙니다. 이 페이지 상단 링크를 누르면 실행파일을 바로 받을 수 있습니다.
+**ExpLooper.exe**를 받으세요. `update.json`은 자동 업데이트용 정보 파일입니다. `Source code` 압축파일은 실행파일이 아닙니다. 이 페이지 상단 링크에서 공개 릴리스를 선택한 뒤 **Assets**의 실행파일을 받으세요.
 
 </details>
 
@@ -189,7 +191,7 @@ Expert Looper는 자주 반복하는 화면 작업을 **보고, 판단하고, �
 
 **조금씩 만들고, 확인하고, 나만의 루틴으로 확장하세요.**
 
-[실행파일 받기](https://github.com/DrFREEST/Expert-Looper-Releases/releases/download/v0.11.7/ExpLooper.exe) · [변경 내역 읽기](CHANGELOG.md) · [릴리스 둘러보기](https://github.com/DrFREEST/Expert-Looper-Releases/releases)
+[실행파일 받기](https://github.com/DrFREEST/Expert-Looper-Releases/releases) · [변경 내역 읽기](CHANGELOG.md) · [릴리스 둘러보기](https://github.com/DrFREEST/Expert-Looper-Releases/releases)
 
 이 저장소는 공개 배포와 안내를 위한 공간입니다.  
 프로그램에 포함된 오픈소스 라이선스는 도움말에서 확인할 수 있습니다.
