@@ -1,0 +1,47 @@
+name: Resend reviewed AI notices
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release-changelog-notifications
+  cancel-in-progress: false
+jobs:
+  resend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          persist-credentials: false
+      - run: python3 -m pip install Pillow==12.1.1
+      - name: Send the two reviewed images to changelog only
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISCORD_CHANGELOG_WEBHOOK: ${{ secrets.DISCORD_CHANGELOG_WEBHOOK }}
+        run: |
+          python3 - <<'PY'
+          import base64,json,os,sys
+          sys.path.insert(0,'scripts')
+          import release_discord as n
+          path='.release-notifications/resend-20261001-ai-0115-v1.json'
+          old=n.get_file(path)
+          if old:
+              saved=json.loads(base64.b64decode(old['content']))
+              if saved.get('status')!='sent':raise RuntimeError('Uncertain send: inspect existing delivery before retry')
+              print('Already sent; no duplicate delivery')
+              raise SystemExit(0)
+          release=n.wait_release_feed('v0.11.5')
+          payload={'after':'0.11.4','target':'0.11.5','entries':[['0.11.5',n.clean(release['body'])]]}
+          images=n.approved_images('release','0.11.5',payload)
+          progress=n.progress_notice()
+          images+=n.approved_images('progress',progress['id'],progress)
+          if len(images)!=2:raise ValueError('This approved resend requires exactly two images')
+          content='**Expert Looper · 업데이트 및 개발 진행 안내**\n안내 이미지를 새롭게 정리해 다시 전해드립니다.\n\n① **0.11.5 업데이트**: 설정 화면 통합 — 현재 배포된 내용입니다.\n② **개발 진행 · 앞으로의 업데이트**: 아직 배포되지 않은 내용이며, 범위와 일정은 검증 결과에 따라 달라질 수 있습니다.\n\nExpert Looper는 다양한 Windows 프로그램의 반복 작업을 돕는 범용 자동화 도구입니다.'
+          n.public_notice_text(content)
+          claim=n.save_state(path,{'status':'pending','version':'0.11.5','reason':'user-requested-reviewed-ai-image-resend'})
+          message=n.send(os.environ['DISCORD_CHANGELOG_WEBHOOK'],content,images)
+          n.save_state(path,{'status':'sent','version':'0.11.5','messageId':message,'imageCount':len(images)},claim)
+          print('Changelog resend completed; two reviewed images attached')
+          PY
