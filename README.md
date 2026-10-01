@@ -11,7 +11,7 @@
 
 **Windows 10 / 11 · 한국어 · 공개 시험 버전**
 
-### [↓ 0.11.5 실행파일 다운로드](https://github.com/DrFREEST/Expert-Looper-Releases/releases/download/v0.11.5/ExpLooper.exe)
+### [↓ 0.11.6 실행파일 다운로드](https://github.com/DrFREEST/Expert-Looper-Releases/releases/download/v0.11.6/ExpLooper.exe)
 
 단일 실행파일 · 약 267MB · Windows x64
 
@@ -99,6 +99,8 @@ Expert Looper는 자주 반복하는 화면 작업을 **보고, 판단하고, �
 
 메뉴 또는 작업실 왼쪽 아래의 **설정** 버튼을 누르면 카테고리별 설정 화면이 열립니다. 실행·보관, 단축키, 화면·테마, 창·트레이, 기존 AI 연결로 이동하고 설정이 저장되는 위치를 확인할 수 있습니다. 기존 설정값과 프로젝트 저장 형식은 유지됩니다.
 
+0.11.6부터 설정 버튼은 작업실 왼쪽 아이콘 메뉴의 하단에 정렬됩니다. 탐색기를 숨긴 상태에서는 상태줄의 설정 버튼으로 이동할 수 있습니다.
+
 ### 프로젝트 작업 단축키 · 0.11.2 이상
 
 | 작업 | 기본 단축키 |
@@ -185,7 +187,7 @@ Expert Looper는 자주 반복하는 화면 작업을 **보고, 판단하고, �
 
 **조금씩 만들고, 확인하고, 나만의 루틴으로 확장하세요.**
 
-[실행파일 받기](https://github.com/DrFREEST/Expert-Looper-Releases/releases/download/v0.11.5/ExpLooper.exe) · [변경 내역 읽기](CHANGELOG.md) · [릴리스 둘러보기](https://github.com/DrFREEST/Expert-Looper-Releases/releases)
+[실행파일 받기](https://github.com/DrFREEST/Expert-Looper-Releases/releases/download/v0.11.6/ExpLooper.exe) · [변경 내역 읽기](CHANGELOG.md) · [릴리스 둘러보기](https://github.com/DrFREEST/Expert-Looper-Releases/releases)
 
 이 저장소는 공개 배포와 안내를 위한 공간입니다.  
 프로그램에 포함된 오픈소스 라이선스는 도움말에서 확인할 수 있습니다.
