@@ -1,0 +1,29 @@
+name: Notification regression checks
+on:
+  pull_request:
+    paths:
+      - 'scripts/release_discord.py'
+      - 'tests/test_release_discord.py'
+      - 'assets/update-public-key.pem'
+      - '.github/workflows/**'
+permissions:
+  contents: read
+jobs:
+  notification-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - run: python3 -m pip install Pillow==12.1.1 cryptography==50.0.2
+      - name: Offline notification regressions
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python3 -m unittest discover -s tests -p 'test*.py'
+      - name: Changed whitespace
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab diff --check "$BASE_SHA...$HEAD_SHA" -- .

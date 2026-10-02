@@ -27,7 +27,7 @@ jobs:
         with:
           ref: main
           persist-credentials: false
-      - run: python3 -m pip install Pillow==12.1.1
+      - run: python3 -m pip install Pillow==12.1.1 cryptography==50.0.2
       - name: Announce release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

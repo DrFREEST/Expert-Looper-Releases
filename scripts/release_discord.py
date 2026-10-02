@@ -13,6 +13,36 @@ import uuid
 import datetime
 import time
 from PIL import Image
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+
+UPDATE_PUBLIC_KEY = pathlib.Path(__file__).resolve().parents[1] / 'assets/update-public-key.pem'
+if not UPDATE_PUBLIC_KEY.is_file():
+    UPDATE_PUBLIC_KEY = pathlib.Path(__file__).resolve().parents[1] / 'src/ExpLooper/Assets/update-public-key.pem'
+
+
+def verified_update_payload(envelope):
+    """Authenticate exact payload bytes with the app's pinned RSA-PSS trust root."""
+    try:
+        if not isinstance(envelope, dict):
+            raise ValueError('Invalid envelope')
+        payload = base64.b64decode(envelope['Payload'], validate=True)
+        signature = base64.b64decode(envelope['Signature'], validate=True)
+        if not 1 <= len(payload) <= 1_000_000:
+            raise ValueError('Update payload size exceeds limit')
+        key = serialization.load_pem_public_key(UPDATE_PUBLIC_KEY.read_bytes())
+        if not isinstance(key, rsa.RSAPublicKey):
+            raise ValueError('RSA public key required')
+        key.verify(signature, payload, padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
+                                                  salt_length=hashes.SHA256().digest_size), hashes.SHA256())
+        result = json.loads(payload)
+        if not isinstance(result, dict):
+            raise ValueError('Invalid update payload')
+        return result
+    except (InvalidSignature, KeyError, TypeError, ValueError, UnicodeError) as error:
+        raise ValueError('Update manifest signature or payload is invalid') from None
+
 
 REPO = "DrFREEST/Expert-Looper-Releases"
 INITIAL_IMAGE_VERSION = "0.8.20"
@@ -202,9 +232,7 @@ def release_feed_ready(tag):
     current = get_file('update.json')
     if not current: raise FeedNotReady('Update feed is not available yet')
     envelope = json.loads(base64.b64decode(current['content']))
-    # The publishing script validates the signature. Here check the advertised immutable asset identity.
-    if not envelope.get('Signature'): raise ValueError('Unsigned update feed')
-    payload = json.loads(base64.b64decode(envelope['Payload'], validate=True))
+    payload = verified_update_payload(envelope)
     if payload.get('Version') != expected:
         if version(payload.get('Version', '')) < version(expected):
             raise FeedNotReady('Update feed still advertises the preceding release')
