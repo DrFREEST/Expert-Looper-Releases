@@ -158,7 +158,8 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 def progress_notice(path=pathlib.Path("개발 진행 안내.json"), today=None):
     """Publish reviewed public summaries only, never private issue bodies."""
     data=json.loads(path.read_text(encoding="utf-8-sig"))
-    today=today or datetime.datetime.now(datetime.timezone.utc).date()
+    today=today or datetime.datetime.now(datetime.timezone.utc).astimezone(
+        datetime.timezone(datetime.timedelta(hours=9))).date()
     if not re.fullmatch(r"[a-z0-9-]{8,64}",data.get("id","")):raise ValueError("Invalid bulletin identity")
     reviewed=datetime.date.fromisoformat(data["reviewed_on"])
     expires=datetime.date.fromisoformat(data["valid_until"])

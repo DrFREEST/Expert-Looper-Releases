@@ -204,3 +204,15 @@ class Checks(unittest.TestCase):
 
 
 if __name__=="__main__":unittest.main()
+
+
+class KoreaProgressDateChecks(unittest.TestCase):
+    def test_reviewed_korea_date_is_current_before_utc_midnight(self):
+        data={'id':'20261013-progress-01','reviewed_on':'2026-10-13','valid_until':'2026-10-20',
+              'items':[{'status':'진행 중','title':'화면 조건 검토','summary':'공개 일정은 미확정입니다.'}]}
+        fixed=datetime.datetime(2026,10,12,16,tzinfo=datetime.timezone.utc)
+        with tempfile.TemporaryDirectory() as folder:
+            path=pathlib.Path(folder)/'progress.json';path.write_text(json.dumps(data),encoding='utf-8')
+            with patch.object(announce.datetime,'datetime') as clock:
+                clock.now.return_value=fixed
+                self.assertEqual(announce.progress_notice(path),data)
