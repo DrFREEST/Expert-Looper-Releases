@@ -144,7 +144,7 @@ class Checks(unittest.TestCase):
             self.assertEqual(len(sends),1)
             self.assertEqual(sends[0][0],"changelog")
             self.assertEqual(sends[0][2],[pathlib.Path("progress.png")])
-            self.assertIn("아직 배포되지",sends[0][1])
+        self.assertIn("지금은 준비 중이라 아직 사용할 수 없습니다.",sends[0][1])
 
     def test_feed_lag_retries_reads_then_allows(self):
         with patch.object(announce,'github',return_value=release_fixture()),patch.object(announce,'get_file',side_effect=[None,feed_fixture('0.11.1'),feed_fixture()]),patch.object(announce.time,'sleep') as sleep:

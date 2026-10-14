@@ -92,6 +92,40 @@ def public_notice_text(text):
     return text
 
 
+def release_notice(release, target, kind, anchor):
+    """Keep reviewed facts in the message; the image is only a quick summary."""
+    details = public_notice_text(clean(release.get("body") or "이번 버전의 변경 설명이 없습니다. 아래 변경 내용 링크에서 확인해 주세요."))
+    if len(details) > 1500:
+        raise ValueError("Rewrite complete concise release sentences before delivery")
+    label = {"fix": "잘못 동작하던 부분을 고쳤습니다", "feature": "새 기능을 추가했습니다",
+             "improvement": "기존 기능을 다듬었습니다"}[kind]
+    text = (
+        f"**Expert Looper {target} 업데이트 안내**\n{label}.\n\n"
+        f"**바뀐 점과 사용 방법**\n{details}\n\n"
+        "**새 버전으로 바꾸는 방법**\n프로그램의 **도움말 → 업데이트 확인**을 눌러 새 버전으로 바꿔 주세요.\n\n"
+    )
+    if kind != "fix":
+        text += f"첨부 이미지에는 {anchor} 이후 바뀐 내용의 핵심을 담았습니다. 중간에 고친 내용도 포함했습니다.\n"
+    text += (f"전체 변경 내용: https://github.com/{REPO}/blob/main/CHANGELOG.md\n\n"
+             "함께 첨부한 개발 진행 이미지는 준비 중인 작업입니다. 아직 사용할 수 없습니다. 업데이트 날짜는 정해지지 않았습니다.")
+    if len(text) > 2000:
+        raise ValueError("Rewrite complete release details to fit the message; do not clip")
+    return text
+
+
+def download_notice(tag, target):
+    return (
+        f"**Expert Looper {target} 받기**\n\n"
+        "**이미 사용하고 있나요?**\n1. 프로그램 위쪽의 **도움말**을 누르세요.\n"
+        "2. **업데이트 확인**을 누르고 화면의 안내를 따라 주세요.\n\n"
+        "**처음 사용하거나 파일을 직접 바꾸나요?**\n"
+        f"1. 아래 링크를 눌러 프로그램 파일을 받으세요.\nhttps://github.com/{REPO}/releases/download/{tag}/ExpLooper.exe\n"
+        "2. 실행 중인 Expert Looper를 종료하세요. 기존 폴더의 ExpLooper.exe 파일만 새 파일로 바꾸세요.\n"
+        "처음 사용한다면 받은 파일을 원하는 폴더에 넣고 실행하세요.\n\n"
+        "**저장한 작업을 지켜 주세요.**\nData 폴더에는 저장한 작업과 설정이 들어 있습니다. 삭제하지 마세요. 그대로 두세요."
+    )
+
+
 def content_hash(data):
     return hashlib.sha256(json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
@@ -190,7 +224,7 @@ def announce_progress():
         if state["status"]!="sent":raise ValueError("Pending delivery requires operator verification")
         return
     image=render_progress(data,pathlib.Path("output"),pathlib.Path("fonts"))
-    content="**Expert Looper · 개발 진행 안내**\n진행 중인 작업과 업데이트 예정 내용을 이미지로 정리했습니다.\n아직 배포되지 않았으며, 일정은 검증 후 확정합니다."
+    content="**Expert Looper · 개발 진행 안내**\n만들고 있는 기능과 앞으로 바뀔 내용을 이미지로 정리했습니다.\n지금은 준비 중이라 아직 사용할 수 없습니다. 시험을 마친 뒤 업데이트 날짜를 안내하겠습니다."
     claim=save_state(state_path,{"status":"pending","bulletin":data["id"]})
     message_id=send(os.environ["DISCORD_CHANGELOG_WEBHOOK"],content,[image])
     save_state(state_path,{"status":"sent","bulletin":data["id"],"messageId":message_id},claim)
@@ -298,14 +332,8 @@ def main():
     for r in all_releases:
         if re.fullmatch(r"v?0\.\d+\.\d+",r["tag_name"]) and not r["draft"]:notes[r["tag_name"].lstrip("v")]=clean(r.get("body") or "")
     images=[];url=release["html_url"]
-    if kind=="fix":
-        text=public_notice_text(clean(release.get("body") or "변경 내용은 릴리스에서 확인해 주세요."))
-        if len(text)>1500:raise ValueError("Rewrite complete concise release sentences before delivery")
-        content=f"새 업데이트가 도착했어요! 🛠️\n**Expert Looper {target} · 버그 수정**\n{text}\n\n더 편하게 사용할 수 있도록 계속 다듬고 있어요. 알려주신 의견에 감사드립니다!"
-    else:
-        content=f"새로운 기능과 개선사항을 만나보세요! ✨\n**Expert Looper {target}**\n{anchor} 이후 변경사항을 이미지로 정리했어요. 중간 버그 수정도 포함했습니다.\n함께 더 편리한 루퍼를 만들어주셔서 감사합니다!\n상세 변경내역: https://github.com/{REPO}/blob/main/CHANGELOG.md"
-    download=f"새 버전을 준비했어요! 📦\n**Expert Looper {target} 다운로드**\nhttps://github.com/{REPO}/releases/download/{tag}/ExpLooper.exe\n\n이미 사용 중이라면 **도움말 → 업데이트 확인**으로도 업데이트할 수 있어요.\n직접 교체할 때는 프로그램을 종료하고 기존 폴더의 실행파일만 교체해 주세요. Data 폴더는 그대로 유지해 주세요!"
-    content+="\n\n첨부된 개발 진행 안내는 아직 배포되지 않은 작업이며, 일정은 미정입니다."
+    content = release_notice(release, target, kind, anchor)
+    download = download_notice(tag, target)
     errors=[]
     for channel,secret,text,files in (("changelog","DISCORD_CHANGELOG_WEBHOOK",content,images),("download","DISCORD_DOWNLOAD_WEBHOOK",download,[])):
         try:

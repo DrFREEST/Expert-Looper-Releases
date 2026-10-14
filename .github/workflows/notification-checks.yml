@@ -4,6 +4,8 @@ on:
     paths:
       - 'scripts/release_discord.py'
       - 'tests/test_release_discord.py'
+      - 'tests/test_release_simple_copy.py'
+      - 'docs/**'
       - 'assets/update-public-key.pem'
       - '.github/workflows/**'
 permissions:
