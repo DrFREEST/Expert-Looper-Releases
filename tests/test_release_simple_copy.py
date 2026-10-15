@@ -12,7 +12,7 @@ spec.loader.exec_module(notice)
 
 class SimpleReleaseCopyChecks(unittest.TestCase):
     def test_progress_notice_explains_preparation_without_claiming_release(self):
-        with patch.object(notice, "progress_notice", return_value={"id": "review-20261001"}), \
+        with patch.object(notice, "progress_notice", return_value={"id": "review-20261001", "items": [{}]}), \
              patch.object(notice, "get_file", return_value=None), \
              patch.object(notice, "render_progress", return_value=pathlib.Path("reviewed.png")), \
              patch.object(notice, "save_state", return_value={"sha": "fake"}), \

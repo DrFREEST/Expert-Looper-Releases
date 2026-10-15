@@ -92,7 +92,7 @@ def public_notice_text(text):
     return text
 
 
-def release_notice(release, target, kind, anchor):
+def release_notice(release, target, kind, anchor, *, has_progress=True):
     """Keep reviewed facts in the message; the image is only a quick summary."""
     details = public_notice_text(clean(release.get("body") or "이번 버전의 변경 설명이 없습니다. 아래 변경 내용 링크에서 확인해 주세요."))
     if len(details) > 1500:
@@ -106,8 +106,9 @@ def release_notice(release, target, kind, anchor):
     )
     if kind != "fix":
         text += f"첨부 이미지에는 {anchor} 이후 바뀐 내용의 핵심을 담았습니다. 중간에 고친 내용도 포함했습니다.\n"
-    text += (f"전체 변경 내용: https://github.com/{REPO}/blob/main/CHANGELOG.md\n\n"
-             "함께 첨부한 개발 진행 이미지는 준비 중인 작업입니다. 아직 사용할 수 없습니다. 업데이트 날짜는 정해지지 않았습니다.")
+    text += f"전체 변경 내용: https://github.com/{REPO}/blob/main/CHANGELOG.md"
+    if has_progress:
+        text += "\n\n함께 첨부한 개발 진행 이미지는 준비 중인 작업입니다. 아직 사용할 수 없습니다. 업데이트 날짜는 정해지지 않았습니다."
     if len(text) > 2000:
         raise ValueError("Rewrite complete release details to fit the message; do not clip")
     return text
@@ -199,7 +200,7 @@ def progress_notice(path=pathlib.Path("개발 진행 안내.json"), today=None):
     expires=datetime.date.fromisoformat(data["valid_until"])
     if not reviewed<=today<=expires or (expires-reviewed).days>14:raise ValueError("Progress summary needs review")
     items=data.get("items",[])
-    if not 1<=len(items)<=3:raise ValueError("Progress summary needs 1..3 items")
+    if not isinstance(items,list) or not 0<=len(items)<=3:raise ValueError("Progress summary needs 0..3 items")
     for item in items:
         if item.get("status") not in ("진행 중","업데이트 예정"):raise ValueError("Invalid progress state")
         if not isinstance(item.get("title"),str) or not 1<=len(item["title"])<=28:raise ValueError("Invalid progress title")
@@ -217,6 +218,9 @@ def render_progress(data, folder, fonts):
 
 def announce_progress():
     data=progress_notice()
+    if not data["items"]:
+        print("진행 안내 항목이 없어 전송하지 않습니다.")
+        raise ValueError("진행 안내 항목이 없어 전송하지 않습니다.")
     state_path=".release-notifications/progress-"+data["id"]+".json"
     existing=get_file(state_path)
     if existing:
@@ -332,7 +336,7 @@ def main():
     for r in all_releases:
         if re.fullmatch(r"v?0\.\d+\.\d+",r["tag_name"]) and not r["draft"]:notes[r["tag_name"].lstrip("v")]=clean(r.get("body") or "")
     images=[];url=release["html_url"]
-    content = release_notice(release, target, kind, anchor)
+    content = release_notice(release, target, kind, anchor, has_progress=False)
     download = download_notice(tag, target)
     errors=[]
     for channel,secret,text,files in (("changelog","DISCORD_CHANGELOG_WEBHOOK",content,images),("download","DISCORD_DOWNLOAD_WEBHOOK",download,[])):
@@ -348,8 +352,11 @@ def main():
                     if kind != "fix":
                         if version(anchor) >= version(target): raise ValueError("Image baseline is not older than release")
                         files=render_image_notes(cumulative(notes,anchor,target),anchor,target,pathlib.Path("output"),pathlib.Path("fonts"))
-                    progress=render_progress(progress_notice(),pathlib.Path("output"),pathlib.Path("fonts"))
-                    files=[*files,progress]
+                    progress_data=progress_notice()
+                    if progress_data["items"]:
+                        progress=render_progress(progress_data,pathlib.Path("output"),pathlib.Path("fonts"))
+                        files=[*files,progress]
+                        text=release_notice(release,target,kind,anchor,has_progress=True)
                     if len(files)>10:raise ValueError("Combined summary exceeds Discord attachment limit")
                 claim=save_state(state_path,{"status":"pending","version":target,"kind":kind})
                 # Never blindly retry an uncertain POST; inspect the channel first.

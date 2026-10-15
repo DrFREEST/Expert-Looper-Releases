@@ -2,15 +2,15 @@
   "schema": 1,
   "style_id": "expert-looper-ai-reference-v1",
   "reference_sha256": "5e0bc380f4b938736bf5279c3a2936f1242fbf0d3d8b81106625aa0997addde8",
-  "prompt_source_sha": "22aab29d14a419985c3c8b7b81f0a7b6c8338bbe",
+  "prompt_source_sha": "43fc589f512bc7a5cb92d26643edd95f6c7fdd4a",
   "kind": "release",
   "identity": "0.11.11",
-  "content_sha256": "1bc5dc98c8f5fcd7e918cea420b3c2af667e44a008b33fd496e5b36d7acbe545",
+  "content_sha256": "73e86da46379bc9817f931edff545675948f105209da5c95a1b8fd9ea151887d",
   "reviewed": true,
   "images": [
     {
       "path": "release-0.11.11-ai.png",
-      "sha256": "be4ae9d0da85efdc8fe21e16cf57b6872a7767c3520c25d90a066d83ea9cdf74"
+      "sha256": "731d4e00f2f796999b4cde6235161c7a8332235bd80a64469b7e7c0c5b2cee18"
     }
   ]
 }

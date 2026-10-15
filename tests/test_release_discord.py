@@ -88,7 +88,7 @@ class Checks(unittest.TestCase):
         def send(url,text,images):
             if url=="changelog" and fail_changelog:raise TimeoutError()
             sent.append((url,text,images));return "123"
-        with patch.dict(os.environ,{"NOTICE_KIND":"release","RELEASE_TAG":"v0.11.2","DISCORD_CHANGELOG_WEBHOOK":"changelog","DISCORD_DOWNLOAD_WEBHOOK":"download"}),patch.object(announce,"github",side_effect=gh),patch.object(announce,"get_file",side_effect=get),patch.object(announce,"save_state",side_effect=save),patch.object(announce,"send",side_effect=send),patch.object(announce,"progress_notice",return_value={}),patch.object(announce,"render_progress",return_value=pathlib.Path("progress.png")):
+        with patch.dict(os.environ,{"NOTICE_KIND":"release","RELEASE_TAG":"v0.11.2","DISCORD_CHANGELOG_WEBHOOK":"changelog","DISCORD_DOWNLOAD_WEBHOOK":"download"}),patch.object(announce,"github",side_effect=gh),patch.object(announce,"get_file",side_effect=get),patch.object(announce,"save_state",side_effect=save),patch.object(announce,"send",side_effect=send),patch.object(announce,"progress_notice",return_value={"items":[{}]}),patch.object(announce,"render_progress",return_value=pathlib.Path("progress.png")):
             if missing_images:
                 with patch.object(announce,'render_image_notes',side_effect=FileNotFoundError('AI assets absent')):
                     with self.assertRaises(RuntimeError):announce.main()
@@ -136,7 +136,7 @@ class Checks(unittest.TestCase):
                 sends.append((url,text,files))
                 if fail:raise TimeoutError()
                 return "321"
-            with patch.dict(os.environ,{"NOTICE_KIND":"progress","DISCORD_CHANGELOG_WEBHOOK":"changelog"}),patch.object(announce,"github",side_effect=AssertionError("No release or download request")),patch.object(announce,"progress_notice",return_value={"id":"review-20261001"}),patch.object(announce,"render_progress",return_value=pathlib.Path("progress.png")),patch.object(announce,"get_file",side_effect=get),patch.object(announce,"save_state",side_effect=save),patch.object(announce,"send",side_effect=send):
+            with patch.dict(os.environ,{"NOTICE_KIND":"progress","DISCORD_CHANGELOG_WEBHOOK":"changelog"}),patch.object(announce,"github",side_effect=AssertionError("No release or download request")),patch.object(announce,"progress_notice",return_value={"id":"review-20261001","items":[{}]}),patch.object(announce,"render_progress",return_value=pathlib.Path("progress.png")),patch.object(announce,"get_file",side_effect=get),patch.object(announce,"save_state",side_effect=save),patch.object(announce,"send",side_effect=send):
                 if fail:
                     with self.assertRaises(TimeoutError):announce.main()
                     with self.assertRaises(ValueError):announce.main()
