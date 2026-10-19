@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "style_id": "expert-looper-ai-reference-v1",
+  "reference_sha256": "5e0bc380f4b938736bf5279c3a2936f1242fbf0d3d8b81106625aa0997addde8",
+  "prompt_source_sha": "1c9228d1752485b6d84c082c6d8d30812c7fb61f",
+  "kind": "release",
+  "identity": "0.11.16",
+  "content_sha256": "7692d2c2e01a28004f3dbfec278f977288972a6354f9f9aeb48aa5092882abc0",
+  "reviewed": true,
+  "images": [
+    {
+      "path": "release-0.11.16-ai.png",
+      "sha256": "5579e8311afdf8026e15103fef40535e7686c7123e4e27980a25eae8473e7f1d"
+    }
+  ],
+  "version": "0.11.16",
+  "source": "59db54a2d27adb6e6a2f7344eaa9389461c91dca",
+  "generated": true,
+  "image_sha256": "5579e8311afdf8026e15103fef40535e7686c7123e4e27980a25eae8473e7f1d",
+  "visual_review_passed": true,
+  "text_sha256": "1ed64b006f07ed269bb74661657fffc4164d4fb1ccdfc99248812c15079543d1",
+  "reference_text_sha256": "0d6c0b9114a9329c5bbb37cb5dbccc55b9918302045015a497fe498ffe8fab8a"
+}
