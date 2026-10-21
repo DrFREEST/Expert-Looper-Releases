@@ -335,6 +335,7 @@ def main():
     notes=history(pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8"))
     for r in all_releases:
         if re.fullmatch(r"v?0\.\d+\.\d+",r["tag_name"]) and not r["draft"]:notes[r["tag_name"].lstrip("v")]=clean(r.get("body") or "")
+    reviewed_fix_image = target == "0.11.18" and kind == "fix" and pathlib.Path(f"channel-images/release-{target}.json").is_file()
     images=[];url=release["html_url"]
     content = release_notice(release, target, kind, anchor, has_progress=False)
     download = download_notice(tag, target)
@@ -349,7 +350,7 @@ def main():
                 message_id=state["messageId"]
             else:
                 if channel=="changelog":
-                    if kind != "fix":
+                    if kind != "fix" or reviewed_fix_image:
                         if version(anchor) >= version(target): raise ValueError("Image baseline is not older than release")
                         files=render_image_notes(cumulative(notes,anchor,target),anchor,target,pathlib.Path("output"),pathlib.Path("fonts"))
                     progress_data=progress_notice()
@@ -362,7 +363,7 @@ def main():
                 # Never blindly retry an uncertain POST; inspect the channel first.
                 message_id=send(os.environ[secret],text,files)
                 save_state(state_path,{"status":"sent","version":target,"kind":kind,"messageId":message_id},claim)
-            if channel=="changelog" and kind!="fix" and version(anchor)<version(target):
+            if channel=="changelog" and (kind!="fix" or reviewed_fix_image) and version(anchor)<version(target):
                 save_state(".release-notifications/image-anchor.json",{"version":target,"messageId":message_id},anchor_file)
             print(channel+" notification completed (or already sent).")
         except Exception as error:errors.append(type(error).__name__)
