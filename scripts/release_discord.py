@@ -298,7 +298,7 @@ def wait_release_feed(tag, attempts=4, delay=10):
 
 
 def save_state(path,data,old=None):
-    body={"message":"Record release notification state","branch":"main","content":base64.b64encode(json.dumps(data).encode()).decode()}
+    body={"message":"릴리스 알림 전달 상태 기록","branch":"main","content":base64.b64encode(json.dumps(data).encode()).decode()}
     if old:body["sha"]=old["sha"]
     return github("/contents/"+path,"PUT",body)["content"]
 

@@ -1,0 +1,29 @@
+{
+  "style_id": "expert-looper-ai-reference-v1",
+  "reference_sha256": "5e0bc380f4b938736bf5279c3a2936f1242fbf0d3d8b81106625aa0997addde8",
+  "prompt_source_sha": "1c9228d1752485b6d84c082c6d8d30812c7fb61f",
+  "kind": "release",
+  "identity": "0.11.18",
+  "content_sha256": "081bf8e21ef1ae72ad35fbc755c3b7c0ea5630989c1f8f3a19681223ca2e4d82",
+  "reviewed": true,
+  "images": [
+    {
+      "path": "release-0.11.18-1200x1700.png",
+      "sha256": "c8dc63a6b34f5d6a1be228f6c6ee7b5da6a067164bf4f9415efc525c75485638"
+    }
+  ],
+  "dimensions": [
+    1200,
+    1700
+  ],
+  "visual_review_passed": true,
+  "schema": 1,
+  "version": "0.11.18",
+  "source": "db48ad88f06964b6526088a52fb318ebb1da4615",
+  "generated": true,
+  "image_sha256": "c8dc63a6b34f5d6a1be228f6c6ee7b5da6a067164bf4f9415efc525c75485638",
+  "ai_original_sha256": "c8818947b655684e07aee34972c5290ec631f27ea8849d8b4bce7a48ab049aa6",
+  "resampling_approval_message": "01a15ecc-e6ff-7883-9510-a134a6f6e96d",
+  "text_sha256": "081bf8e21ef1ae72ad35fbc755c3b7c0ea5630989c1f8f3a19681223ca2e4d82",
+  "reference_text_sha256": "081bf8e21ef1ae72ad35fbc755c3b7c0ea5630989c1f8f3a19681223ca2e4d82"
+}
